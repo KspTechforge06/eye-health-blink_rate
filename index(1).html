@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlinkGuard Wireless</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07080f;
+  --surface: #0c0f1e;
+  --card: #10152a;
+  --border: #1a2540;
+  --border2: #243560;
+  --accent: #3bf0c5;
+  --good: #3bf0c5;
+  --warn: #f0c53b;
+  --bad: #f05a3b;
+  --text: #dce8ff;
+  --muted: #3d5480;
+  --mono: 'Space Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:var(--bg); color:var(--text);
+  font-family:var(--sans); min-height:100vh; overflow-x:hidden;
+}
+body::after {
+  content:''; position:fixed; inset:0;
+  background:radial-gradient(ellipse 80% 60% at 10% 20%, rgba(59,240,197,0.04) 0%, transparent 60%),
+             radial-gradient(ellipse 60% 50% at 90% 80%, rgba(59,142,240,0.04) 0%, transparent 60%);
+  pointer-events:none; z-index:0;
+}
+body::before {
+  content:''; position:fixed; inset:0;
+  background-image:linear-gradient(rgba(59,240,197,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,240,197,0.025) 1px, transparent 1px);
+  background-size:36px 36px; pointer-events:none; z-index:0;
+}
+.wrap { max-width:1080px; margin:0 auto; padding:22px 18px 40px; position:relative; z-index:1; }
+
+/* Header */
+header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:28px; padding-bottom:18px; border-bottom:1px solid var(--border);
+  flex-wrap:wrap; gap:12px;
+}
+.brand { display:flex; align-items:center; gap:14px; }
+.brand-eye {
+  width:44px; height:44px; background:var(--card);
+  border:1px solid var(--border2); border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+}
+.brand-name { font-weight:800; font-size:1.4rem; letter-spacing:-0.5px; }
+.brand-name span { color:var(--accent); }
+.brand-sub { font-family:var(--mono); font-size:0.6rem; color:var(--muted); letter-spacing:3px; text-transform:uppercase; margin-top:2px; }
+
+.conn-area { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.conn-status { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:0.68rem; color:var(--muted); }
+.conn-dot { width:7px; height:7px; border-radius:50%; background:var(--muted); transition:background 0.3s; flex-shrink:0; }
+.conn-dot.on { background:var(--good); box-shadow:0 0 6px var(--good); animation:pdot 2s infinite; }
+.conn-dot.err { background:var(--bad); }
+@keyframes pdot { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+.wifi-badge {
+  display:flex; align-items:center; gap:8px;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:100px; padding:7px 14px;
+  font-family:var(--mono); font-size:0.68rem;
+}
+.wifi-bars { display:flex; align-items:flex-end; gap:2px; height:13px; }
+.wb { width:3px; border-radius:1px; background:var(--muted); transition:background 0.3s; }
+.wb.lit { background:var(--accent); }
+
+/* Connect Panel */
+.cp {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:16px; padding:16px 20px;
+  display:flex; align-items:center; gap:10px;
+  margin-bottom:22px; flex-wrap:wrap;
+}
+.cp-label { font-family:var(--mono); font-size:0.62rem; color:var(--muted); letter-spacing:2px; text-transform:uppercase; white-space:nowrap; }
+.cp-input {
+  background:var(--surface); border:1px solid var(--border2);
+  border-radius:8px; color:var(--text);
+  font-family:var(--mono); font-size:0.82rem;
+  padding:9px 13px; outline:none; transition:border-color 0.2s, box-shadow 0.2s;
+  min-width:170px; flex:1;
+}
+.cp-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(59,240,197,0.1); }
+.cp-input::placeholder { color:var(--muted); }
+.port-in { min-width:60px; flex:0; width:65px; }
+.btn { padding:9px 20px; border-radius:8px; border:none; font-family:var(--mono); font-size:0.73rem; font-weight:700; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:all 0.2s; white-space:nowrap; }
+.btn-go   { background:var(--accent); color:#000; }
+.btn-go:hover { filter:brightness(1.12); transform:translateY(-1px); }
+.btn-dc   { background:transparent; color:var(--bad); border:1px solid var(--bad); }
+.btn-dc:hover { background:rgba(240,90,59,0.1); }
+.btn-demo { background:transparent; color:var(--muted); border:1px solid var(--border2); }
+.btn-demo:hover { border-color:var(--accent); color:var(--accent); }
+.btn-rst  { background:transparent; color:var(--muted); border:1px solid var(--border); font-size:0.65rem; padding:7px 13px; }
+.btn-rst:hover { color:var(--text); border-color:var(--border2); }
+.demo-pill { font-family:var(--mono); font-size:0.65rem; padding:4px 10px; border-radius:4px; background:rgba(240,197,59,0.1); color:var(--warn); border:1px solid rgba(240,197,59,0.25); }
+
+/* Grid */
+.mgrid {
+  display:grid;
+  grid-template-columns:210px 1fr 1fr;
+  gap:16px; margin-bottom:16px;
+}
+@media(max-width:800px){ .mgrid{grid-template-columns:1fr 1fr;} }
+@media(max-width:520px){ .mgrid{grid-template-columns:1fr;} }
+
+.card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:16px; padding:20px; position:relative; overflow:hidden;
+}
+.card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, transparent, var(--accent), transparent); opacity:0.3;
+}
+.clbl { font-family:var(--mono); font-size:0.6rem; letter-spacing:2.5px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+
+/* Dial card */
+.dial-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:22px 16px; }
+.dial-wrap { position:relative; width:148px; height:148px; }
+.dial-wrap svg { transform:rotate(-220deg); }
+.dial-track { stroke:var(--border2); stroke-width:7; fill:none; }
+.dial-fill {
+  stroke:var(--accent); stroke-width:7; fill:none; stroke-linecap:round;
+  stroke-dasharray:314 377; stroke-dashoffset:314;
+  transition:stroke-dashoffset 1s ease, stroke 0.5s;
+  filter:drop-shadow(0 0 5px var(--accent));
+}
+.dial-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.dial-num { font-family:var(--mono); font-size:2.5rem; font-weight:700; line-height:1; color:var(--accent); transition:color 0.5s; }
+.dial-unit { font-family:var(--mono); font-size:0.58rem; color:var(--muted); letter-spacing:2px; }
+.hpill { font-family:var(--mono); font-size:0.76rem; font-weight:700; padding:5px 18px; border-radius:100px; letter-spacing:1px; transition:all 0.4s; }
+.h-none { color:var(--muted); background:rgba(61,84,128,0.1); border:1px solid var(--border); }
+.h-good { color:var(--good); background:rgba(59,240,197,0.08); border:1px solid rgba(59,240,197,0.2); }
+.h-warn { color:var(--warn); background:rgba(240,197,59,0.08); border:1px solid rgba(240,197,59,0.2); }
+.h-bad  { color:var(--bad);  background:rgba(240,90,59,0.08);  border:1px solid rgba(240,90,59,0.2); }
+.range-track { height:5px; border-radius:100px; background:var(--surface); border:1px solid var(--border); overflow:hidden; }
+.range-fill { height:100%; border-radius:100px; background:var(--accent); width:0%; transition:width 1s ease, background 0.5s; }
+.range-labels { display:flex; justify-content:space-between; font-family:var(--mono); font-size:0.52rem; color:var(--muted); margin-top:4px; }
+
+/* Stats */
+.sgrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; height:calc(100% - 32px); }
+.sbox { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:13px 12px; }
+.sval { font-family:var(--mono); font-size:1.55rem; font-weight:700; color:var(--accent); line-height:1; margin-bottom:3px; transition:color 0.3s; }
+.slbl { font-size:0.68rem; color:var(--muted); font-family:var(--mono); }
+
+/* Sensor */
+.sens-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; }
+.eye-orb {
+  width:78px; height:78px; border-radius:50%;
+  background:var(--surface); border:2px solid var(--border2);
+  display:flex; align-items:center; justify-content:center;
+  position:relative; font-size:2rem;
+  transition:border-color 0.2s, box-shadow 0.2s;
+}
+.eye-orb.blink-active { border-color:var(--accent); box-shadow:0 0 18px rgba(59,240,197,0.4); }
+.ripple { position:absolute; width:78px; height:78px; border-radius:50%; border:2px solid var(--accent); opacity:0; pointer-events:none; }
+.ripple.go { animation:ripout 0.65s ease-out forwards; }
+@keyframes ripout { 0%{transform:scale(1);opacity:0.7} 100%{transform:scale(2.2);opacity:0} }
+.sig-pill {
+  font-family:var(--mono); font-size:0.78rem; padding:6px 16px;
+  border-radius:8px; background:var(--surface); border:1px solid var(--border);
+  color:var(--accent); letter-spacing:2px; transition:all 0.15s;
+}
+.sig-pill.active { background:rgba(59,240,197,0.1); border-color:var(--accent); box-shadow:0 0 10px rgba(59,240,197,0.2); }
+.lbtime { font-family:var(--mono); font-size:0.6rem; color:var(--muted); text-align:center; }
+
+/* Wave */
+.wave-card { grid-column:1 / -1; }
+.wave-wrap { height:78px; background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+canvas { width:100%; height:100%; display:block; }
+
+/* Bottom */
+.bgrid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:600px){ .bgrid{grid-template-columns:1fr;} }
+.log-scroll { max-height:185px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; }
+.log-scroll::-webkit-scrollbar { width:3px; }
+.log-scroll::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+.lrow {
+  display:flex; align-items:center; gap:8px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:7px; padding:7px 10px;
+  font-family:var(--mono); font-size:0.7rem;
+  animation:lin 0.25s ease;
+}
+@keyframes lin { from{opacity:0;transform:translateX(-7px)} to{opacity:1;transform:none} }
+.lt { color:var(--muted); flex-shrink:0; }
+.lb { color:var(--accent); font-weight:700; }
+.ln { color:var(--muted); font-size:0.6rem; }
+.lh { margin-left:auto; font-size:0.65rem; }
+
+.bar-area { display:flex; align-items:flex-end; gap:5px; height:125px; padding-top:8px; }
+.bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end; }
+.bar-f { width:100%; border-radius:4px 4px 0 0; background:var(--accent); opacity:0.7; transition:height 0.5s ease, background 0.3s; min-height:2px; }
+.bar-lbl { font-family:var(--mono); font-size:0.52rem; color:var(--muted); }
+
+/* Notif */
+.notif {
+  position:fixed; top:18px; right:18px;
+  background:var(--card); border:1px solid var(--border2);
+  border-radius:12px; padding:13px 17px;
+  font-family:var(--mono); font-size:0.76rem;
+  transform:translateX(130%); transition:transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+  z-index:999; max-width:250px; box-shadow:0 8px 28px rgba(0,0,0,0.4);
+}
+.notif.show { transform:translateX(0); }
+.nt { font-weight:700; margin-bottom:3px; }
+.nb { color:var(--muted); font-size:0.66rem; }
+
+footer { text-align:center; font-family:var(--mono); font-size:0.6rem; color:var(--muted); margin-top:26px; padding-top:16px; border-top:1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="notif" id="notif">
+  <div class="nt" id="nT">Info</div>
+  <div class="nb" id="nB"></div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="brand-eye">
+        <svg width="26" height="16" viewBox="0 0 26 16" fill="none">
+          <path d="M1 8C1 8 5 1 13 1C21 1 25 8 25 8C25 8 21 15 13 15C5 15 1 8 1 8Z" stroke="#3bf0c5" stroke-width="1.5" fill="rgba(59,240,197,0.1)"/>
+          <circle cx="13" cy="8" r="3.5" fill="#3bf0c5"/>
+          <circle cx="14.5" cy="6.5" r="1" fill="white" opacity="0.7"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">Blink<span>Guard</span></div>
+        <div class="brand-sub">ESP8266 Wireless Monitor</div>
+      </div>
+    </div>
+    <div class="conn-area">
+      <div class="conn-status">
+        <div class="conn-dot" id="cDot"></div>
+        <span id="cText">DISCONNECTED</span>
+      </div>
+      <div class="wifi-badge">
+        <div class="wifi-bars">
+          <div class="wb" id="wb1" style="height:4px;"></div>
+          <div class="wb" id="wb2" style="height:8px;"></div>
+          <div class="wb" id="wb3" style="height:12px;"></div>
+        </div>
+        <span id="rssiTxt" style="color:var(--muted);">— dBm</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Connect Panel -->
+  <div class="cp">
+    <span class="cp-label">ESP IP</span>
+    <input class="cp-input" id="ipIn" type="text" placeholder="192.168.1.xx" value="192.168.1.">
+    <span class="cp-label">Port</span>
+    <input class="cp-input port-in" id="portIn" type="text" value="81">
+    <button class="btn btn-go"   onclick="wsConnect()">Connect</button>
+    <button class="btn btn-dc"   onclick="wsDisconnect()">Disconnect</button>
+    <button class="btn btn-demo" onclick="startDemo()">Demo</button>
+    <span class="demo-pill" id="demoPill" style="display:none">● DEMO</span>
+    <button class="btn btn-rst"  onclick="resetSession()">↺ Reset</button>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="mgrid">
+
+    <!-- Dial -->
+    <div class="card dial-card">
+      <div class="clbl" style="text-align:center;">Blink Rate</div>
+      <div class="dial-wrap">
+        <svg width="148" height="148" viewBox="0 0 148 148">
+          <circle class="dial-track" cx="74" cy="74" r="60"
+            stroke-dasharray="314 377" stroke-dashoffset="-31"/>
+          <circle class="dial-fill" id="dFill" cx="74" cy="74" r="60"
+            stroke-dasharray="314 377" stroke-dashoffset="314"/>
+        </svg>
+        <div class="dial-center">
+          <div class="dial-num" id="bpmNum">0</div>
+          <div class="dial-unit">BPM</div>
+        </div>
+      </div>
+      <div class="hpill h-none" id="hPill">NO DATA</div>
+      <div style="width:100%">
+        <div class="range-track"><div class="range-fill" id="rFill"></div></div>
+        <div class="range-labels"><span>0</span><span>12▼</span><span>20▲</span><span>30</span></div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="card">
+      <div class="clbl">Session Stats</div>
+      <div class="sgrid">
+        <div class="sbox"><div class="sval" id="sTot">0</div><div class="slbl">Total Blinks</div></div>
+        <div class="sbox"><div class="sval" id="sDur">00:00</div><div class="slbl">Duration</div></div>
+        <div class="sbox"><div class="sval" id="sMin">—</div><div class="slbl">Min BPM</div></div>
+        <div class="sbox"><div class="sval" id="sMax">—</div><div class="slbl">Max BPM</div></div>
+      </div>
+    </div>
+
+    <!-- Sensor -->
+    <div class="card sens-card">
+      <div class="clbl" style="text-align:center;">IR Sensor</div>
+      <div class="eye-orb" id="eyeOrb">
+        <div class="ripple" id="ripple"></div>
+        <span style="position:relative;z-index:2;">👁️</span>
+      </div>
+      <div class="sig-pill" id="sigPill">IDLE</div>
+      <div class="lbtime" id="lbTime">Last blink: —</div>
+    </div>
+
+    <!-- Waveform -->
+    <div class="card wave-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="clbl" style="margin:0;">Live Signal</div>
+        <span id="wvStatus" style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);">Waiting…</span>
+      </div>
+      <div class="wave-wrap"><canvas id="waveCanvas"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- Bottom -->
+  <div class="bgrid">
+    <div class="card">
+      <div class="clbl">Event Log</div>
+      <div class="log-scroll" id="logList">
+        <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);padding:28px 0;text-align:center;">Waiting for connection…</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="clbl">Blink Intervals (last 10)</div>
+      <div class="bar-area" id="barArea">
+        <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);text-align:center;width:100%;align-self:center;">No data yet</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>BlinkGuard Wireless v2.0 &nbsp;|&nbsp; ESP8266 WebSocket &nbsp;|&nbsp; 12–20 BPM = Healthy</footer>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────
+let ws=null, demoTimer=null, isDemo=false;
+let sessionStart=null, sessionTimer=null;
+let totalBlinks=0, blinkTimes=[], intervalHistory=[];
+let minBpm=Infinity, maxBpm=0, lastBlinkMs=null;
+let waveData=[];
+
+// ── Canvas ─────────────────────────────────────────
+const canvas=document.getElementById('waveCanvas');
+const ctx=canvas.getContext('2d');
+function rszCanvas(){ canvas.width=canvas.offsetWidth; canvas.height=canvas.offsetHeight; }
+rszCanvas(); window.addEventListener('resize',rszCanvas);
+
+function drawWave(){
+  rszCanvas();
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const data=waveData.slice(-380);
+  if(data.length<2) return;
+  const step=W/(380-1);
+  // glow
+  ctx.beginPath(); ctx.strokeStyle='rgba(59,240,197,0.18)'; ctx.lineWidth=5;
+  data.forEach((v,i)=>{ const x=i*step,y=v?H*0.12:H*0.82; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.stroke();
+  // line
+  ctx.beginPath(); ctx.strokeStyle='#3bf0c5'; ctx.lineWidth=2;
+  ctx.shadowColor='#3bf0c5'; ctx.shadowBlur=7;
+  data.forEach((v,i)=>{ const x=i*step,y=v?H*0.12:H*0.82; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.stroke(); ctx.shadowBlur=0;
+}
+setInterval(drawWave,50);
+setInterval(()=>{ if(ws||isDemo){ waveData.push(0); if(waveData.length>1200)waveData.shift(); } },100);
+
+// ── BPM ────────────────────────────────────────────
+function calcBPM(){ const now=Date.now(); return blinkTimes.filter(t=>now-t<60000).length; }
+
+// ── Dial ───────────────────────────────────────────
+function updateDial(bpm){
+  document.getElementById('bpmNum').textContent=bpm;
+  const pct=Math.min(bpm/30,1);
+  document.getElementById('dFill').style.strokeDashoffset=314-pct*314;
+  let color,pcls,ptxt;
+  if(bpm===0)     {color='#3d5480';pcls='h-none';ptxt='NO DATA';}
+  else if(bpm<12) {color='#f05a3b';pcls='h-bad'; ptxt='TOO LOW ⚠';}
+  else if(bpm<=20){color='#3bf0c5';pcls='h-good';ptxt='HEALTHY ✓';}
+  else            {color='#f0c53b';pcls='h-warn';ptxt='TOO HIGH !';}
+  const df=document.getElementById('dFill');
+  df.style.stroke=color; df.style.filter=`drop-shadow(0 0 5px ${color})`;
+  document.getElementById('bpmNum').style.color=color;
+  const p=document.getElementById('hPill'); p.className='hpill '+pcls; p.textContent=ptxt;
+  const rf=document.getElementById('rFill'); rf.style.width=(pct*100)+'%'; rf.style.background=color;
+  if(bpm>0){
+    if(bpm<minBpm){minBpm=bpm;document.getElementById('sMin').textContent=bpm;}
+    if(bpm>maxBpm){maxBpm=bpm;document.getElementById('sMax').textContent=bpm;}
+  }
+}
+
+// ── Blink ──────────────────────────────────────────
+function onBlink(bpm){
+  const now=Date.now();
+  totalBlinks++;
+  blinkTimes.push(now);
+  if(lastBlinkMs){intervalHistory.push(now-lastBlinkMs);if(intervalHistory.length>10)intervalHistory.shift();}
+  lastBlinkMs=now;
+  for(let i=0;i<4;i++)waveData.push(1);
+  for(let i=0;i<6;i++)waveData.push(0);
+  // Eye orb
+  const orb=document.getElementById('eyeOrb');
+  orb.classList.add('blink-active');
+  const rip=document.getElementById('ripple');
+  rip.className='ripple'; void rip.offsetWidth; rip.className='ripple go';
+  setTimeout(()=>orb.classList.remove('blink-active'),300);
+  // Signal pill
+  const sp=document.getElementById('sigPill');
+  sp.textContent='BLINK!'; sp.classList.add('active');
+  setTimeout(()=>{sp.textContent='IDLE';sp.classList.remove('active');},350);
+  document.getElementById('lbTime').textContent='Last: '+new Date(now).toLocaleTimeString();
+  document.getElementById('sTot').textContent=totalBlinks;
+  document.getElementById('wvStatus').textContent='Active';
+  const b=bpm||calcBPM();
+  updateDial(b); addLog(b); updateBars();
+}
+
+// ── Log ────────────────────────────────────────────
+function addLog(bpm){
+  const list=document.getElementById('logList');
+  const ph=list.querySelector('div[style]'); if(ph)ph.remove();
+  const row=document.createElement('div'); row.className='lrow';
+  const t=new Date().toLocaleTimeString();
+  const hc=bpm<12?'var(--bad)':bpm>20?'var(--warn)':'var(--good)';
+  const ht=bpm<12?'LOW':bpm>20?'HIGH':'OK';
+  row.innerHTML=`<span class="lt">${t}</span><span class="lb">${bpm} BPM</span><span class="ln">#${totalBlinks}</span><span class="lh" style="color:${hc}">${ht}</span>`;
+  list.prepend(row); if(list.children.length>25)list.lastChild.remove();
+}
+
+// ── Bars ───────────────────────────────────────────
+function updateBars(){
+  const area=document.getElementById('barArea');
+  if(!intervalHistory.length)return;
+  area.innerHTML='';
+  const mx=Math.max(...intervalHistory);
+  intervalHistory.forEach(iv=>{
+    const pct=Math.max(4,Math.round((iv/mx)*100));
+    const c=iv<2500?'var(--warn)':iv>7000?'var(--bad)':'var(--accent)';
+    const col=document.createElement('div'); col.className='bar-col';
+    col.innerHTML=`<div class="bar-f" style="height:${pct}%;background:${c};"></div><div class="bar-lbl">${(iv/1000).toFixed(1)}s</div>`;
+    area.appendChild(col);
+  });
+}
+
+// ── Session Timer ──────────────────────────────────
+function startSession(){
+  sessionStart=Date.now();
+  if(sessionTimer)clearInterval(sessionTimer);
+  sessionTimer=setInterval(()=>{
+    const e=Math.floor((Date.now()-sessionStart)/1000);
+    document.getElementById('sDur').textContent=String(Math.floor(e/60)).padStart(2,'0')+':'+String(e%60).padStart(2,'0');
+  },1000);
+}
+
+function resetSession(){
+  totalBlinks=0;blinkTimes=[];intervalHistory=[];waveData=[];
+  minBpm=Infinity;maxBpm=0;lastBlinkMs=null;
+  ['sTot'].forEach(id=>document.getElementById(id).textContent='0');
+  ['sMin','sMax'].forEach(id=>document.getElementById(id).textContent='—');
+  document.getElementById('logList').innerHTML='<div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);padding:28px 0;text-align:center;">Reset.</div>';
+  document.getElementById('barArea').innerHTML='<div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);text-align:center;width:100%;align-self:center;">No data yet</div>';
+  updateDial(0);
+  if(sessionStart)startSession();
+  if(ws&&ws.readyState===WebSocket.OPEN)ws.send('RESET');
+  showNotif('Reset','Session cleared.');
+}
+
+// ── RSSI ───────────────────────────────────────────
+function updateRSSI(rssi){
+  if(!rssi)return;
+  document.getElementById('rssiTxt').textContent=rssi+' dBm';
+  const good=rssi>-60,ok=rssi>-75;
+  ['wb1','wb2','wb3'].forEach((id,i)=>{
+    document.getElementById(id).classList.toggle('lit',good||(ok&&i<2)||(!ok&&!good&&i<1));
+  });
+}
+
+// ── WebSocket ──────────────────────────────────────
+function wsConnect(){
+  const ip=document.getElementById('ipIn').value.trim();
+  const port=document.getElementById('portIn').value.trim()||'81';
+  if(!ip){showNotif('No IP','Enter ESP8266 IP address.');return;}
+  stopDemo();
+  if(ws){ws.close();ws=null;}
+  showNotif('Connecting…','ws://'+ip+':'+port);
+  try{ ws=new WebSocket('ws://'+ip+':'+port); }
+  catch(e){showNotif('Error',e.message);return;}
+  ws.onopen=()=>{ setConn(true,'CONNECTED · '+ip); startSession(); showNotif('Connected!','WebSocket live.'); };
+  ws.onmessage=(e)=>{
+    try{
+      const d=JSON.parse(e.data);
+      if(d.type==='blink')onBlink(d.bpm);
+      else if(d.type==='stats'){ updateDial(d.bpm); if(d.total)document.getElementById('sTot').textContent=d.total; updateRSSI(d.rssi); document.getElementById('wvStatus').textContent='Live · '+(d.rssi||'?')+'dBm'; }
+    }catch{}
+  };
+  ws.onclose=()=>{ setConn(false,'DISCONNECTED'); showNotif('Disconnected','WS closed.'); };
+  ws.onerror=()=>{ setConn(false,'ERROR'); showNotif('Error','Check IP & WiFi.'); };
+}
+function wsDisconnect(){ if(ws){ws.close();ws=null;} setConn(false,'DISCONNECTED'); }
+
+// ── Demo ───────────────────────────────────────────
+function startDemo(){
+  wsDisconnect(); isDemo=true;
+  document.getElementById('demoPill').style.display='inline';
+  setConn(true,'DEMO MODE'); startSession(); updateRSSI(-65);
+  showNotif('Demo Mode','Simulating blink data…');
+  let phase=0;
+  function next(){
+    if(!isDemo)return; phase++;
+    let d;
+    if(phase%40<4)d=5800+Math.random()*2000;
+    else if(phase%40>36)d=1200+Math.random()*400;
+    else d=3000+Math.random()*1500;
+    demoTimer=setTimeout(()=>{onBlink(calcBPM());next();},d);
+  }
+  next();
+}
+function stopDemo(){ isDemo=false; if(demoTimer){clearTimeout(demoTimer);demoTimer=null;} document.getElementById('demoPill').style.display='none'; }
+
+// ── Helpers ────────────────────────────────────────
+function setConn(on,txt){
+  const d=document.getElementById('cDot'); d.className='conn-dot'+(on?' on':'');
+  document.getElementById('cText').textContent=txt;
+}
+let nTimer=null;
+function showNotif(t,b){
+  document.getElementById('nT').textContent=t; document.getElementById('nB').textContent=b;
+  const n=document.getElementById('notif'); n.classList.add('show');
+  if(nTimer)clearTimeout(nTimer); nTimer=setTimeout(()=>n.classList.remove('show'),3500);
+}
+
+// Init
+updateDial(0); setConn(false,'DISCONNECTED');
+</script>
+</body>
+</html>
